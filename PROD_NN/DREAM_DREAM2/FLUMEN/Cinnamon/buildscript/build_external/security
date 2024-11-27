@@ -1,0 +1,1126 @@
+#Secure Storage: generate the signature for libraries, executable binaries, 
+# application odex and some value extracted from kernel system.map
+# All generated files are stored in system/etc/secure_storage
+[ functions ]
+package_make_secure_storage_sign = """
+
+############################################################
+# PLEASE ADD LISTS OF APPS WHICH USE SECURE STORAGE HERE!! #
+############################################################
+  BUILD_SECURITY_SECURE_STORAGE_DATA="\
+    SS_LIB:\
+      orig@system/lib/libc.so target@.system.lib.libc.so ;\
+      orig@system/lib/libart.so target@.system.lib.libart.so ;\
+      orig@system/vendor/lib/libsecure_storage_jni.so target@.vendor.lib.libsecure_storage_jni.so ;\
+      orig@system/vendor/lib/libsecure_storage.so target@.vendor.lib.libsecure_storage.so ;\
+      orig@system/lib/libandroid_runtime.so target@.system.lib.libandroid_runtime.so ;\
+      orig@system/lib/libsec_ode_sdcardencryption.so target@.system.lib.libsec_ode_sdcardencryption.so ;\
+      orig@system/lib/libsec_ode_keymanager.so target@.system.lib.libsec_ode_keymanager.so ;\
+      orig@system/lib/libcrypto.so target@.system.lib.libcrypto.so ;\
+      orig@system/lib/libsqlite.so target@.system.lib.libsqlite.so ;\
+      orig@system/lib/libbinder.so target@.system.lib.libbinder.so ;\
+      orig@system/lib/libbluetooth_jni.so target@.system.lib.libbluetooth_jni.so ;\
+      orig@system/lib/hw/bluetooth.default.so target@.system.lib.hw.bluetooth.default.so \
+    ,\
+    SS_BIN:\
+      orig@system/bin/app_process32 target@.system.bin.app_process32 lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libcrypto.so:system/lib/libsqlite.so ;\
+      orig@system/bin/app_process64 target@.system.bin.app_process64 lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libcrypto.so:system/lib/libsqlite.so ;\
+      orig@system/bin/app_process name@system_server target@system_server lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libandroid_runtime.so:system/lib/libcrypto.so:system/lib/libsqlite.so level@3 ; \
+      orig@system/bin/dex2oat target@.system.bin.dex2oat lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libcrypto.so:system/lib/libsqlite.so ;\
+      orig@system/bin/secure_storage_pm target@.system.bin.secure_storage_pm lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libcrypto.so:system/lib/libsqlite.so ;\
+      orig@system/bin/wpa_supplicant target@.system.bin.wpa_supplicant lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libcrypto.so:system/lib/libsqlite.so level@3 ;\
+      orig@system/bin/vold target@.system.bin.vold lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libsec_ode_sdcardencryption.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libsec_ode_keymanager.so level@3 ;\
+      orig@system/bin/libsec_ode_pbkdf_test target@.system.bin.libsec_ode_pbkdf_test lib@system/lib/libc.so:vendor/lib/libsecure_storage.so:system/lib/libsec_ode_sdcardencryption.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libsec_ode_keymanager.so level@3 \
+    ,\
+    SS_APP:\
+      orig@system/app/SecurityLogAgent/oat/arm/SecurityLogAgent.odex target@com.samsung.android.securitylogagent lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so ;\
+      orig@system/priv-app/ContextProvider/oat/arm/ContextProvider.odex target@com.samsung.android.providers.context lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so ;\
+      orig@system/priv-app/HealthService/oat/arm/HealthService.odex target@com.sec.android.service.health lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so level@3 ;\
+      orig@system/priv-app/PersonalPageService/oat/arm/PersonalPageService.odex target@com.samsung.android.personalpage.service lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so level@3 ;\
+      orig@system/app/Bluetooth/oat/arm/Bluetooth.odex target@com.android.bluetooth lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:system/lib/hw/bluetooth.default.so:system/lib/libbluetooth_jni.so level@3 ;\
+      orig@system/priv-app/SmartManager_v5_DeviceSecurity/oat/arm/SmartManager_v5_DeviceSecurity.odex target@com.samsung.android.sm.devicesecurity lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so ;\
+      orig@system/priv-app/SmartManager_v5_DeviceSecurity_CN/oat/arm/SmartManager_v5_DeviceSecurity_CN.odex target@com.samsung.android.sm.devicesecurity.tcm lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so \
+    ,\
+    SS_APP64:\
+      orig@system/app/SecurityLogAgent/oat/arm64/SecurityLogAgent.odex target@com.samsung.android.securitylogagent lib@system/bin/app_process64:system/lib64/libc.so:system/lib64/libcrypto.so:system/lib64/libsqlite.so:system/lib64/libart.so:system/lib64/libbinder.so:vendor/lib64/libsecure_storage.so:vendor/lib64/libsecure_storage_jni.so ;\
+      orig@system/priv-app/ContextProvider/oat/arm64/ContextProvider.odex target@com.samsung.android.providers.context lib@system/bin/app_process64:system/lib64/libc.so:system/lib64/libcrypto.so:system/lib64/libsqlite.so:system/lib64/libart.so:system/lib64/libbinder.so:vendor/lib64/libsecure_storage.so:vendor/lib64/libsecure_storage_jni.so ;\
+      orig@system/priv-app/HealthService/oat/arm/HealthService.odex target@com.sec.android.service.health lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:vendor/lib/libsecure_storage_jni.so level@3 ;\
+      orig@system/priv-app/PersonalPageService/oat/arm64/PersonalPageService.odex target@com.samsung.android.personalpage.service lib@system/bin/app_process64:system/lib64/libc.so:system/lib64/libcrypto.so:system/lib64/libsqlite.so:system/lib64/libart.so:system/lib64/libbinder.so:vendor/lib64/libsecure_storage.so:vendor/lib64/libsecure_storage_jni.so ;\
+      orig@system/app/Bluetooth/oat/arm/Bluetooth.odex target@com.android.bluetooth lib@system/bin/app_process32:system/lib/libc.so:system/lib/libcrypto.so:system/lib/libsqlite.so:system/lib/libart.so:system/lib/libbinder.so:vendor/lib/libsecure_storage.so:system/lib/hw/bluetooth.default.so:system/lib/libbluetooth_jni.so level@3 ;\
+      orig@system/priv-app/SmartManager_v5_DeviceSecurity/oat/arm64/SmartManager_v5_DeviceSecurity.odex target@com.samsung.android.sm.devicesecurity lib@system/bin/app_process64:system/lib64/libc.so:system/lib64/libcrypto.so:system/lib64/libsqlite.so:system/lib64/libart.so:system/lib64/libbinder.so:vendor/lib64/libsecure_storage.so:vendor/lib64/libsecure_storage_jni.so ;\
+      orig@system/priv-app/SmartManager_v5_DeviceSecurity_CN/oat/arm64/SmartManager_v5_DeviceSecurity_CN.odex target@com.samsung.android.sm.devicesecurity.tcm lib@system/bin/app_process64:system/lib64/libc.so:system/lib64/libcrypto.so:system/lib64/libsqlite.so:system/lib64/libart.so:system/lib64/libbinder.so:vendor/lib64/libsecure_storage.so:vendor/lib64/libsecure_storage_jni.so \
+    ,\
+  "
+############################################################
+
+
+  echo $BUILD_SECURITY_SECURE_STORAGE_DATA
+
+  pushd $(pwd) > /dev/null
+  cd %(android-product-out-dir)s
+
+  # Do not remove to keep ss_config which is made at kernel build time
+  # rm -rf system/etc/secure_storage
+
+  export FOTA_ZIP_PATH="$1"
+  export SS_CACHE_LOG="%(top-dir)s/buildscript/build_ss.log"
+  export string_runtime_libart_default=""
+
+  local kernel_info_already_cached="false"
+  if [ -f "$SS_CACHE_LOG" ] ; then
+    while read LINE ; do
+      if [ "`echo $LINE | grep "kernel_type="`" != "" ] ; then
+        kernel_info_already_cached="true"
+        break
+      fi
+    done < $SS_CACHE_LOG
+  fi
+
+  if [ "$kernel_info_already_cached" == "false" ] ; then
+    echo "ANDROID_PRODUCT_OUT=$ANDROID_PRODUCT_OUT" >> $SS_CACHE_LOG
+  else
+    echo "ANDROID_PRODUCT_OUT=$ANDROID_PRODUCT_OUT" > $SS_CACHE_LOG
+  fi
+  echo "TARGET_BUILD_VARIANT=$TARGET_BUILD_VARIANT" >> $SS_CACHE_LOG
+  echo "TARGET_PRODUCT=$TARGET_PRODUCT" >> $SS_CACHE_LOG
+  echo "PROJECT_NAME=$PROJECT_NAME" >> $SS_CACHE_LOG
+
+  local kernel_arch=%(build-kernel:arch_name)s
+
+  echo "[SecureStorage] Start to build the signatures ($TARGET_BUILD_VARIANT, $kernel_arch)"
+
+  local sslib_type="SS_LIB"
+  local ssbin_type="SS_BIN"
+  local ssapp_type=""
+  if [[ "$kernel_arch" == "arm64" && "%(build-kernel:subtype)s" != "exynos7580" ]]
+  then
+    echo "[SecureStorage] 64-bit support"
+    ssapp_type="SS_APP64"
+  else
+    echo "[SecureStorage] 32-bit support"
+    ssapp_type="SS_APP"
+  fi
+
+  #generate ss_id from lib and bin files
+  secure_storage_generate_ss_id "$BUILD_SECURITY_SECURE_STORAGE_DATA" $sslib_type
+  secure_storage_generate_ss_id "$BUILD_SECURITY_SECURE_STORAGE_DATA" $ssbin_type
+
+  #generate odex from frameworks and make odex from app list
+  secure_storage_make_odex "$BUILD_SECURITY_SECURE_STORAGE_DATA" $ssapp_type "$FOTA_ZIP_PATH"
+
+  #generate ss_id from app
+  secure_storage_generate_ss_id "$BUILD_SECURITY_SECURE_STORAGE_DATA" $ssapp_type
+
+  #sign
+  if [ -d "./system/etc/secure_storage" ]
+  then
+    if [ "$TARGET_BUILD_VARIANT" != "eng" ] ; then
+      echo "[SecureStorage] sign auth files, user/userdebug"
+      #sign with the signing server
+      tar -cf ss_auth.tar ./system/etc/secure_storage
+      if [ "$SEC_BUILD_OPTION_NEW_SIGNSERVER" == "true" ] ; then
+        sign_new_server %(top-dir)s/buildscript/tools/signclient.jar ss_openssl_securestorage SECURE_STORAGE ss_auth.tar ss_auth.signed.tar
+      else
+        perl %(top-dir)s/buildscript/tools/SecureBootSign.pl ss_openssl_securestorage SECURE_STORAGE ss_auth.tar -out ss_auth.signed.tar
+      fi
+
+      tar -xf ss_auth.signed.tar
+      rm ss_auth.tar
+      rm ss_auth.signed.tar
+    else
+      echo "[SecureStorage] sign auth files, eng"
+      ss_local_sign
+    fi
+  else
+    echo "[SecureStorage] skipped, nothing for secure storage"  
+  fi
+
+  #update fota zip to include ss_config and ss_id
+  if [ -f "$FOTA_ZIP_PATH" ] ; then
+    echo "[SecureStorage] rm -rf SYSTEM/etc/secure_storage"
+    rm -rf SYSTEM/etc/secure_storage
+
+    echo "[SecureStorage] mkdir -p SYSTEM/etc"
+    mkdir -p SYSTEM/etc
+
+    echo "[SecureStorage] cp -rf ./system/etc/secure_storage SYSTEM/etc"
+    cp -rf ./system/etc/secure_storage SYSTEM/etc
+
+    echo "[SecureStorage] 7z u -mx=0 $FOTA_ZIP_PATH SYSTEM/etc/secure_storage"
+    7z u -mx=0 $FOTA_ZIP_PATH "SYSTEM/etc/secure_storage"
+  else
+    echo "[SecureStorage] warning, no file $FOTA_ZIP_PATH"
+  fi
+
+  echo "kernel_arch=%(build-kernel:arch_name)s" >> $SS_CACHE_LOG
+  echo "kernel_type=%(build-kernel:type)s" >> $SS_CACHE_LOG
+  echo "kernel_subtype=$kernel_subtype" >> $SS_CACHE_LOG
+  echo "SEC_BUILD_OPTION_NEW_SIGNSERVER=$SEC_BUILD_OPTION_NEW_SIGNSERVER" >> $SS_CACHE_LOG
+  echo "PLATFORM_VERSION=5.0" >> $SS_CACHE_LOG
+
+  echo "[SecureStorage] End"
+
+  popd > /dev/null
+"""
+
+#Secure Storage: generate ss_id from the files of the given list
+# input 1: list
+# input 2: token like SS_LIB, SS_BIN, or SS_APP
+secure_storage_generate_ss_id = """
+  pushd $(pwd) > /dev/null
+  cd %(android-product-out-dir)s
+
+  local list=`echo $1| tr ',' '\n'| grep "$2"|sed -n "s/$2:[ ]*//p"`
+
+  local type=""
+  local isArm64=""
+  if [ "$2" == "SS_LIB" ] ; then
+    type="-l"
+  elif [ "$2" == "SS_BIN" ] ; then
+    type="-a"
+  else
+    if [ "$2" == "SS_APP64" ] ; then
+      isArm64="Y"
+    fi
+    if [[ "$string_runtime_libart_default" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+      echo "[SecureStorage] SS_ID TYPE: DVM"
+      type="-o"
+    else
+      echo "[SecureStorage] SS_ID TYPE: ART"
+      type="-c"
+    fi
+  fi
+
+  #generate ss_id from the given file list
+  if [ "$list" != "" ] ; then
+    echo "[SecureStorage] generate ss_id from file and sign them"
+    mkdir -p system/etc
+
+    local count=`echo $list|tr ';' '\n'|wc -l`
+    local num=`expr 1`
+    echo "count $count"
+    while [ $num -le $count ]
+    do
+      local item=`echo $list|tr ';' '\n'|sed -n "${num}p"`
+      local orig=`_get_arg "$item" orig`
+      local name=`_get_arg "$item" name`
+      local target=`_get_arg "$item" target`
+      local lib=`_get_arg "$item" lib`
+      local level=`_get_arg "$item" level`
+      local elf=""
+      if [ -f "$orig" ] ; then
+        if [ "$type" == "-a" ] ; then
+          elf=`readelf -h $orig|sed -n -e "s/\s*Class:\s*ELF//p"`
+          if [ "$elf" == "64" ] ; then
+            lib=`echo $lib| sed "s/\/lib\//\/lib64\//g"`
+          fi
+        fi
+      fi
+      local apk=""
+      if [[ "$type" == "-o" || "$type" == "-c" ]] ; then
+        apk=`echo $orig| sed "s/\.odex$/\.apk/i"`
+        apk=`echo $apk| sed "s/\/oat\/arm\//\//i"`
+        apk=`echo $apk| sed "s/\/oat\/arm64\//\//i"`
+      fi
+
+      echo "($num) item: $item, orig: $orig, elf: $elf, apk: $apk, name: $name, target: $target, lib: $lib, level: $level"
+
+      local app_ssid_temp_dir="_ss_app_ssid_temp"
+      local ss_provision_cmd="%(top-dir)s/buildscript/tools/secure_storage_provision"
+      local ss_provision_dex_cmd="${ss_provision_cmd}"
+
+      if [ "$TARGET_BUILD_VARIANT" == "eng" ]; then
+          ss_provision_cmd="${ss_provision_cmd} -g"
+          ss_provision_dex_cmd="${ss_provision_dex_cmd} -g"
+      fi
+
+      if [ "$isArm64" == "Y" ] ; then
+        if [ "$type" == "-o" ] ; then
+          ss_provision_cmd="${ss_provision_cmd} -A"
+        fi
+        ss_provision_dex_cmd="${ss_provision_dex_cmd} -A"
+      fi
+
+      if [ -f "$orig" ] ; then
+        ss_provision_cmd="${ss_provision_cmd} $type $orig"
+      else
+        ss_provision_cmd="${ss_provision_cmd} -e $orig"
+      fi
+
+      if [ "$type" == "-o" ] ; then     # for odex
+        #generate information used to authenticate odex
+#        if [ -f "$orig" ] ; then
+#          %(top-dir)s/buildscript/tools/secure_storage_dexdump -s $orig > /dev/null
+#        fi
+        ss_provision_cmd="${ss_provision_cmd} -n $target"
+      elif [ "$type" == "-c" ] ; then   # for oart
+        ss_provision_cmd="${ss_provision_cmd} -n $target"
+      else                              # for others (native)
+        if [ "$name" != "" ] ; then
+          ss_provision_cmd="${ss_provision_cmd} -n $name"
+        else
+          ss_provision_cmd="${ss_provision_cmd} -n /$orig"
+        fi
+      fi
+
+      if [ "$type" != "-l" ] ; then
+        ss_provision_cmd="${ss_provision_cmd} -p $lib"
+      fi
+
+      if [ "$level" == "1" ] ; then     # level 1 authentication (fast reauthentication)
+        ss_provision_cmd="${ss_provision_cmd} -t"
+      elif [ "$level" == "3" ] ; then   # level 3 authentication (minimal authentication)
+        ss_provision_cmd="${ss_provision_cmd} -s"
+      fi
+
+      if [ -f "$orig" ] ; then
+        #extract certificate from apk
+        if [[ "$type" == "-o" || "$type" == "-c" ]] ; then
+          mkdir ${app_ssid_temp_dir}
+
+          local unzip_result=`unzip $apk META-INF/CERT.RSA -d ${app_ssid_temp_dir} 2> /dev/null`
+          if [ -f "${app_ssid_temp_dir}/META-INF/CERT.RSA" ] ; then
+            ss_provision_cmd="${ss_provision_cmd} -k ${app_ssid_temp_dir}/META-INF/CERT.RSA"
+          else
+            echo "[SecureStorage] warning, no CERT.RSA in $apk"
+          fi
+        fi
+
+        #generate ss_id
+        echo "${ss_provision_cmd}"
+        ${ss_provision_cmd}
+
+        #remove information used to authenticate odex or oart
+        if [[ "$type" == "-o" || "$type" == "-c" ]] ; then
+          rm -f ${orig}.skips
+          rm -rf ${app_ssid_temp_dir}
+        fi
+      else
+        #generate dummy ss_id
+        echo "[SecureStorage] Empty ss_id will be created"
+        echo "${ss_provision_cmd}"
+        ${ss_provision_cmd}
+      fi
+
+      #move
+      if [ -f "ss_id" ] ; then
+        mkdir -p system/etc/secure_storage/$target 
+        mv -f ss_id system/etc/secure_storage/$target/ss_id
+      fi
+
+      #generate ss_id for 64-bit lib
+      if [ "$type" == "-l" ] ; then
+        echo "[SecureStorage] generate ss_id for 64-bit lib"
+        if [ -f "$orig" ] ; then
+          orig=`echo $orig| sed "s/\/lib\//\/lib64\//i"`
+          if [ ! -f "$orig" ] ; then
+            ss_provision_cmd=`echo $ss_provision_cmd| sed "s/ $type / -e /i"`
+          fi
+        else
+          orig=`echo $orig| sed "s/\/lib\//\/lib64\//i"`
+          if [ -f "$orig" ] ; then
+            ss_provision_cmd=`echo $ss_provision_cmd| sed "s/ -e / $type /i"`
+          fi
+        fi
+        target=`echo $target| sed "s/\.lib\./\.lib64\./i"`
+        ss_provision_cmd=`echo $ss_provision_cmd| sed "s/\/lib\//\/lib64\//g"`
+        ss_provision_cmd=`echo $ss_provision_cmd| sed "s/\.lib\./\.lib64\./g"`
+        echo "($num) item: $item, orig: $orig, elf: $elf, apk: $apk, name: $name, target: $target, lib: $lib, level: $level"
+
+        if [ ! -f "$orig" ] ; then
+          echo "[SecureStorage] Empty ss_id will be created"
+        fi
+
+        echo "${ss_provision_cmd}"
+        ${ss_provision_cmd}
+
+        #move
+        if [ -f "ss_id" ] ; then
+          mkdir -p system/etc/secure_storage/$target 
+          mv -f ss_id system/etc/secure_storage/$target/ss_id
+        fi
+      fi
+
+      #generation of ss_id for classes.dex (for supporting M OS)
+      if [[ "$type" == "-o" || "$type" == "-c" ]] ; then
+        echo "[SecureStorage] generate ss_id for classes.dex"
+        if [ -f "$apk" ] ; then
+          mkdir ${app_ssid_temp_dir}
+
+          local unzip_result=`unzip $apk classes.dex -d ${app_ssid_temp_dir} 2> /dev/null`
+          if [ -f "${app_ssid_temp_dir}/classes.dex" ] ; then
+            ss_provision_dex_cmd="${ss_provision_dex_cmd} -o ${app_ssid_temp_dir}/classes.dex -n $target -p $lib"
+            if [ "$level" == "1" ] ; then     # level 1 authentication (fast reauthentication)
+              ss_provision_dex_cmd="${ss_provision_dex_cmd} -t"
+            elif [ "$level" == "3" ] ; then   # level 3 authentication (minimal authentication)
+              ss_provision_dex_cmd="${ss_provision_dex_cmd} -s"
+            fi
+#            %(top-dir)s/buildscript/tools/secure_storage_dexdump -s ${app_ssid_temp_dir}/classes.dex > /dev/null
+          else
+            ss_provision_dex_cmd="${ss_provision_dex_cmd} -e ${app_ssid_temp_dir}/classes.dex -n $target -p $lib"
+            if [ "$level" == "1" ] ; then     # level 1 authentication (fast reauthentication)
+              ss_provision_dex_cmd="${ss_provision_dex_cmd} -t"
+            elif [ "$level" == "3" ] ; then   # level 3 authentication (minimal authentication)
+              ss_provision_dex_cmd="${ss_provision_dex_cmd} -s"
+            fi
+            echo "[SecureStorage] warning, no classes.dex in $apk"
+            echo "[SecureStorage] Empty ss_id will be created"
+          fi
+
+          #extract certificate from apk
+          unzip_result=`unzip $apk META-INF/CERT.RSA -d ${app_ssid_temp_dir} 2> /dev/null`
+          if [ -f "${app_ssid_temp_dir}/META-INF/CERT.RSA" ] ; then
+            ss_provision_dex_cmd="${ss_provision_dex_cmd} -k ${app_ssid_temp_dir}/META-INF/CERT.RSA"
+          else
+            echo "[SecureStorage] warning, no CERT.RSA in $apk"
+          fi
+
+          echo "${ss_provision_dex_cmd}"
+          ${ss_provision_dex_cmd}
+
+          #remove information used to authenticate classes.dex
+          rm -rf ${app_ssid_temp_dir}
+        else
+          #generate dummy ss_id
+          echo "[SecureStorage] Empty ss_id will be created"
+          ss_provision_dex_cmd="${ss_provision_dex_cmd} -e ${app_ssid_temp_dir}/classes.dex -n $target -p $lib"
+          if [ "$level" == "1" ] ; then     # level 1 authentication (fast reauthentication)
+            ss_provision_dex_cmd="${ss_provision_dex_cmd} -t"
+          elif [ "$level" == "3" ] ; then   # level 3 authentication (minimal authentication)
+            ss_provision_dex_cmd="${ss_provision_dex_cmd} -s"
+          fi
+          echo "[SecureStorage] warning, no apk: $apk"
+          echo "[SecureStorage] Empty ss_id will be created"
+          echo "${ss_provision_dex_cmd}"
+          ${ss_provision_dex_cmd}
+        fi
+
+        #move
+        if [ -f "ss_id" ] ; then
+          mkdir -p system/etc/secure_storage/$target\!dex
+          mv -f ss_id system/etc/secure_storage/$target\!dex/ss_id
+        fi
+      fi
+
+      num=`expr $num + 1`
+    done
+  fi
+
+  popd > /dev/null
+"""
+
+#Secure Storage: write variables used for generation of odex files,
+# which are used by secure_storage_make_odex
+secure_storage_write_variables = """
+  pushd $(pwd) > /dev/null
+
+  echo "DEXPREOPT_EXPORTED=$DEXPREOPT_EXPORTED" > $SS_CACHE_LOG
+  echo "DEXPREOPT_PRODUCT_DIR_EXPORTED=$DEXPREOPT_PRODUCT_DIR_EXPORTED" >> $SS_CACHE_LOG
+  echo "AAPT_EXPORTED=$AAPT_EXPORTED" >> $SS_CACHE_LOG
+  echo "DEXPREOPT_DEXOPT=$DEXPREOPT_DEXOPT" >> $SS_CACHE_LOG
+  echo "DEXPREOPT_BUILD_DIR=$DEXPREOPT_BUILD_DIR" >> $SS_CACHE_LOG
+  echo "DEXPREOPT_BOOT_JAR_DIR=$DEXPREOPT_BOOT_JAR_DIR" >> $SS_CACHE_LOG
+  echo "DEXPREOPT_UNIPROCESSOR=$DEXPREOPT_UNIPROCESSOR" >> $SS_CACHE_LOG
+  echo "DEXPREOPT_BOOT_JARS=$DEXPREOPT_BOOT_JARS" >> $SS_CACHE_LOG
+  echo "PRODUCT_RUNTIMES=$PRODUCT_RUNTIMES" >> $SS_CACHE_LOG
+
+  popd > /dev/null
+"""
+
+#Secure Storage: read variables used for generation of odex files,
+# which are used by secure_storage_make_odex
+secure_storage_read_variables = """
+  pushd $(pwd) > /dev/null
+
+  if [ ! -e "$SS_CACHE_LOG" ] ; then
+    echo "[SecureStorage] $SS_CACHE_LOG is not found"
+  elif [ ! -f "$SS_CACHE_LOG" ] ; then
+    echo "[SecureStorage] $SS_CACHE_LOG is not a regular file"
+  fi
+
+  DEXPREOPT_EXPORTED=""
+  DEXPREOPT_PRODUCT_DIR_EXPORTED=""
+  AAPT_EXPORTED=""
+  DEXPREOPT_DEXOPT=""
+  DEXPREOPT_BUILD_DIR=""
+  DEXPREOPT_BOOT_JAR_DIR=""
+  DEXPREOPT_UNIPROCESSOR=""
+  DEXPREOPT_BOOT_JARS=""
+  PRODUCT_RUNTIMES=""
+
+  while read LINE ; do
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_EXPORTED\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_EXPORTED=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_PRODUCT_DIR_EXPORTED\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_PRODUCT_DIR_EXPORTED=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^AAPT_EXPORTED\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        AAPT_EXPORTED=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_DEXOPT\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_DEXOPT=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_BUILD_DIR\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_BUILD_DIR=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_BOOT_JAR_DIR\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_BOOT_JAR_DIR=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_UNIPROCESSOR\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_UNIPROCESSOR=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^DEXPREOPT_BOOT_JARS\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        DEXPREOPT_BOOT_JARS=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+
+    PARSED_LINE=`echo $LINE | sed -n -e "s/^PRODUCT_RUNTIMES\s*=\s*//p"`
+    if [ "$PARSED_LINE" != "" ] ; then
+        PRODUCT_RUNTIMES=`echo $PARSED_LINE | grep "$PARSED_LINE" 2> /dev/null | sed -n -e "s/[\n]*$//p"`
+        continue
+    fi
+  done < $SS_CACHE_LOG
+
+  echo "[SecureStorage] DEXPREOPT_EXPORTED=$DEXPREOPT_EXPORTED"
+  echo "[SecureStorage] DEXPREOPT_PRODUCT_DIR_EXPORTED=$DEXPREOPT_PRODUCT_DIR_EXPORTED"
+  echo "[SecureStorage] AAPT_EXPORTED=$AAPT_EXPORTED"
+  echo "[SecureStorage] DEXPREOPT_DEXOPT=$DEXPREOPT_DEXOPT"
+  echo "[SecureStorage] DEXPREOPT_BUILD_DIR=$DEXPREOPT_BUILD_DIR"
+  echo "[SecureStorage] DEXPREOPT_BOOT_JAR_DIR=$DEXPREOPT_BOOT_JAR_DIR"
+  echo "[SecureStorage] DEXPREOPT_UNIPROCESSOR=$DEXPREOPT_UNIPROCESSOR"
+  echo "[SecureStorage] DEXPREOPT_BOOT_JARS=$DEXPREOPT_BOOT_JARS"
+  echo "[SecureStorage] PRODUCT_RUNTIMES=$PRODUCT_RUNTIMES"
+
+  popd > /dev/null
+"""
+
+#Secure Storage: generate odex files because secure storage only
+# authenticates odex. So in eng/userdebug mode, or for prebuilt apk in user mode,
+# we translate application to odex format
+secure_storage_make_odex = """
+  pushd $(pwd) > /dev/null
+  cd %(top-dir)s/android
+
+  echo "[SecureStorage] read variables used for generation of odex files"
+  secure_storage_read_variables
+
+  echo "[SecureStorage] generate odex files"
+  local DEXPREOPT=${DEXPREOPT_EXPORTED}
+  local DEXPREOPT_PRODUCT_DIR=${DEXPREOPT_PRODUCT_DIR_EXPORTED}
+  local AAPT=${AAPT_EXPORTED}
+  local list=`echo $1| tr ',' '\n'| grep "$2"|sed -n "s/$2:[ ]*//p"`
+  local framework_list=`echo ${DEXPREOPT_BOOT_JARS}| tr ':' '\n'`
+  local dexpreopt_cmd="${DEXPREOPT} --dexopt=${DEXPREOPT_DEXOPT} --build-dir=${DEXPREOPT_BUILD_DIR} \
+              --product-dir=${DEXPREOPT_PRODUCT_DIR} --boot-dir=${DEXPREOPT_BOOT_JAR_DIR} \
+              --boot-jars=${DEXPREOPT_BOOT_JARS} ${DEXPREOPT_UNIPROCESSOR}"
+  local rm_cmd="rm -f "
+  local cp_cmd="cp -f "
+  local zipinfo_cmd="unzip -Z -1 "
+  local fota_zip_path=$3
+  local string_runtime_libart=`echo $PRODUCT_RUNTIMES | grep "runtime_libart" 2> /dev/null`
+
+  export string_runtime_libart_default=`echo $PRODUCT_RUNTIMES | grep "runtime_libart_default" 2> /dev/null`
+
+  #generate odex of frameworks defined in DEXPREOPT_BOOT_JARS
+  if [[ "$TARGET_BUILD_VARIANT" == "eng" || "$TARGET_BUILD_VARIANT" == "userdebug" ]] ; then
+    if [ "$framework_list" != "" ] ; then
+      echo "[SecureStorage] generate odex of frameworks used for dex preoptimization"
+
+      for framework_item in $framework_list ; do
+        local jar="${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.jar"
+
+        echo " $jar"
+
+        #check if jar exists
+        if [ -f "${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar" ] ; then
+          local classes=`$zipinfo_cmd ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar classes.dex 2> /dev/null`
+
+          #check if jar includes classes.dex
+          if [ "$classes" == "classes.dex" ] ; then
+            #check if art is default
+            if [[ "$string_runtime_libart_default" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+              echo "[SecureStorage] DVM DEFAULT"
+
+              #delete the existing odex
+              if [ -e "${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex" ] ; then
+                echo "[SecureStorage] delete the existing odex: ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex"
+                $rm_cmd \
+                  ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex
+              fi
+
+              #generate odex from jar only if the jar exists and the jar includes classes.dex
+              echo "[SecureStorage] $dexpreopt_cmd ${DEXPREOPT_PRODUCT_DIR}/$jar ${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex"
+              $dexpreopt_cmd \
+                ${DEXPREOPT_PRODUCT_DIR}/$jar \
+                ${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex
+
+              #check if art is supported
+              echo "[SecureStorage] PRODUCT_RUNTIMES: $PRODUCT_RUNTIMES"
+              echo "[SecureStorage] string_runtime_libart: $string_runtime_libart"
+              if [[ "$string_runtime_libart" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+                echo "[SecureStorage] NO ART SUPPORT"
+
+                #remove classes.dex from jar
+                #echo "[SecureStorage] ${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar classes.dex"
+                #${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar classes.dex
+              fi
+
+              #update fota zip to include framework odex in eng or userdebug binary
+              if [ -f "$fota_zip_path" ] ; then
+                local fota_target_path=`echo ${DEXPREOPT_BOOT_JAR_DIR}|sed -e s/system/SYSTEM/`
+
+                echo "[SecureStorage] mkdir -p $fota_target_path"
+                mkdir -p $fota_target_path
+
+                #echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.apk $fota_target_path"
+                #cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.apk "$fota_target_path"
+                echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex $fota_target_path"
+                cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${DEXPREOPT_BOOT_JAR_DIR}/$framework_item.odex "$fota_target_path"
+
+                #echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$framework_item.apk"
+                #7z u -mx=0 $fota_zip_path "$fota_target_path/$framework_item.apk"
+                echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$framework_item.odex"
+                7z u -mx=0 $fota_zip_path "$fota_target_path/$framework_item.odex"
+              else
+                echo "[SecureStorage] warning, no file $fota_zip_path"
+              fi
+            else
+              echo "[SecureStorage] ART DEFAULT"
+            fi
+          else
+            echo "[SecureStorage] err, no classes.dex in ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar"
+          fi
+        else
+          echo "[SecureStorage] err, no file ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$jar"
+        fi
+      done
+    fi
+  fi
+
+  #generate odex of applications using Secure Storage
+  if [ "$list" != "" ] ; then
+    echo "[SecureStorage] generate odex of applications to be signed"
+
+    local count=`echo $list|tr ';' '\n'|wc -l`
+    local num=`expr 1`
+
+    echo "count $count"
+
+    while [ $num -le $count ] ; do
+      local item=`echo $list|tr ';' '\n'|sed -n "${num}p"`
+      local orig=`_get_arg "$item" orig`
+      local apk=`echo $orig| sed "s/\.odex$/\.apk/i"`
+      local apk=`echo $apk| sed "s/\/oat\/arm\//\//i"`
+      local apk=`echo $apk| sed "s/\/oat\/arm64\//\//i"`
+
+      echo "($num) item: $item, orig: $orig, apk: $apk"
+
+      #check if apk exists
+      if [ -f "${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk" ] ; then
+        local classes=`$zipinfo_cmd ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk classes.dex 2> /dev/null`
+
+        #check if apk includes classes.dex
+        if [ "$classes" == "classes.dex" ] ; then
+          #check if art is default
+          if [[ "$string_runtime_libart_default" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+            echo "[SecureStorage] DVM DEFAULT"
+
+            if [[ "$TARGET_BUILD_VARIANT" == "eng" || "$TARGET_BUILD_VARIANT" == "userdebug" ]] ; then
+              #delete the existing odex
+              if [ -e "${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig" ] ; then
+                echo "[SecureStorage] delete the existing odex: ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig"
+                $rm_cmd \
+                  ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig
+              fi
+
+              #generate odex from apk only if the apk exists and the apk includes classes.dex
+              echo "[SecureStorage] $dexpreopt_cmd ${DEXPREOPT_PRODUCT_DIR}/$apk ${DEXPREOPT_PRODUCT_DIR}/$orig"
+              $dexpreopt_cmd \
+                ${DEXPREOPT_PRODUCT_DIR}/$apk \
+                ${DEXPREOPT_PRODUCT_DIR}/$orig
+
+              #check if art is supported
+              echo "[SecureStorage] PRODUCT_RUNTIMES: $PRODUCT_RUNTIMES"
+              echo "[SecureStorage] string_runtime_libart: $string_runtime_libart"
+              if [[ "$string_runtime_libart" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+                echo "[SecureStorage] NO ART SUPPORT"
+
+                #backup apk with classes.dex to apk.ss
+                echo "[SecureStorage] $cp_cmd ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${apk}.ss"
+                $cp_cmd \
+                  ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk \
+                  ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${apk}.ss
+
+                #remove classes.dex from apk
+                echo "[SecureStorage] ${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk classes.dex"
+                ${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk classes.dex
+
+                #update fota zip to include app apk and apk.ss in eng or userdebug binary
+                if [ -f "$fota_zip_path" ] ; then
+                  local apk_path=`dirname $apk`
+                  local apk_file=`basename $apk`
+                  local fota_target_path=`echo $apk_path|sed -e s/system/SYSTEM/`
+
+                  echo "[SecureStorage] mkdir -p $fota_target_path"
+                  mkdir -p $fota_target_path
+
+                  echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk $fota_target_path"
+                  cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk "$fota_target_path"
+                  echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${apk}.ss $fota_target_path"
+                  cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/${apk}.ss "$fota_target_path"
+
+                  echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$apk_file"
+                  7z u -mx=0 $fota_zip_path "$fota_target_path/$apk_file"
+                  echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/${apk_file}.ss"
+                  7z u -mx=0 $fota_zip_path "$fota_target_path/${apk_file}.ss"
+                else
+                  echo "[SecureStorage] warning, no file $fota_zip_path"
+                fi
+              fi
+
+              #update fota zip to include app odex in eng or userdebug binary
+              if [ -f "$fota_zip_path" ] ; then
+                local odex_path=`dirname $orig`
+                local odex_file=`basename $orig`
+                local fota_target_path=`echo $odex_path|sed -e s/system/SYSTEM/`
+
+                echo "[SecureStorage] mkdir -p $fota_target_path"
+                mkdir -p $fota_target_path
+
+                echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig $fota_target_path"
+                cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig "$fota_target_path"
+
+                echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$odex_file"
+                7z u -mx=0 $fota_zip_path "$fota_target_path/$odex_file"
+              else
+                echo "[SecureStorage] warning, no file $fota_zip_path"
+              fi
+            else
+              if [ -f "${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig" ] ; then
+                echo "[SecureStorage] odex of apk is already generated: ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig"
+              else
+                #in user build, generate odex from apk only if the odex is not generated
+                echo "[SecureStorage] $dexpreopt_cmd ${DEXPREOPT_PRODUCT_DIR}/$apk ${DEXPREOPT_PRODUCT_DIR}/$orig"
+                $dexpreopt_cmd \
+                  ${DEXPREOPT_PRODUCT_DIR}/$apk \
+                  ${DEXPREOPT_PRODUCT_DIR}/$orig
+
+                #check if art is supported
+                echo "[SecureStorage] PRODUCT_RUNTIMES: $PRODUCT_RUNTIMES"
+                echo "[SecureStorage] string_runtime_libart: $string_runtime_libart"
+                if [[ "$string_runtime_libart" == "" && "${DEXPREOPT_EXPORTED}" != "" ]] ; then
+                  echo "[SecureStorage] NO ART SUPPORT"
+
+                  #remove classes.dex from apk
+                  echo "[SecureStorage] ${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk classes.dex"
+                  ${AAPT} remove ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk classes.dex
+
+                  #update fota zip to include app apk in user binary
+                  if [ -f "$fota_zip_path" ] ; then
+                    local apk_path=`dirname $apk`
+                    local apk_file=`basename $apk`
+                    local fota_target_path=`echo $apk_path|sed -e s/system/SYSTEM/`
+
+                    echo "[SecureStorage] mkdir -p $fota_target_path"
+                    mkdir -p $fota_target_path
+
+                    echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk $fota_target_path"
+                    cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk "$fota_target_path"
+
+                    echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$apk_file"
+                    7z u -mx=0 $fota_zip_path "$fota_target_path/$apk_file"
+                  else
+                    echo "[SecureStorage] warning, no file $fota_zip_path"
+                  fi
+                fi
+
+                #update fota zip to include app odex in user binary
+                if [ -f "$fota_zip_path" ] ; then
+                  local odex_path=`dirname $orig`
+                  local odex_file=`basename $orig`
+                  local fota_target_path=`echo $odex_path|sed -e s/system/SYSTEM/`
+
+                  echo "[SecureStorage] mkdir -p $fota_target_path"
+                  mkdir -p $fota_target_path
+
+                  echo "[SecureStorage] cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig $fota_target_path"
+                  cp -f ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$orig "$fota_target_path"
+
+                  echo "[SecureStorage] 7z u -mx=0 $fota_zip_path $fota_target_path/$odex_file"
+                  7z u -mx=0 $fota_zip_path "$fota_target_path/$odex_file"
+                else
+                  echo "[SecureStorage] warning, no file $fota_zip_path"
+                fi
+              fi
+            fi
+          else
+            echo "[SecureStorage] ART DEFAULT"
+          fi
+        else
+          echo "[SecureStorage] err, no classes.dex in ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk"
+        fi
+      else
+        echo "[SecureStorage] err, no file ${DEXPREOPT_BUILD_DIR}/${DEXPREOPT_PRODUCT_DIR}/$apk"
+      fi
+
+      num=`expr $num + 1`
+    done
+  fi
+
+  echo "BUILD_SECURITY_SECURE_STORAGE_DATA=$1" >> $SS_CACHE_LOG
+
+  popd > /dev/null
+"""
+
+ss_local_sign = """
+  pushd $(pwd) > /dev/null
+  cd system/etc
+
+  find . -name ss_id -exec %(top-dir)s/buildscript/tools/secure_storage_sign.sh %(top-dir)s/buildscript/tools/ss_private_dummy.key {} {}.signed \;
+  find . -name ss_id -exec rm -rf {} \;
+  find -name *.signed | sed 's/.signed//g' | awk '{print $1".signed ",$1}' | xargs -n2 mv
+
+  popd > /dev/null
+"""
+
+package_make_secure_dat = """
+  local securefile_list=$1
+  local fota_zip_file=$2
+  local tz_drm_list="%(sign-sec-secureboot:tz_drm)s"
+  local fidd_list="%(sign-sec-secureboot:fidd)s"
+  local cc_list="%(sign-sec-secureboot:cc)s"
+  local sysscope_list="%(sign-sec-secureboot:sysscope)s"
+
+  pushd $(pwd) > /dev/null
+  cd %(android-product-out-dir)s
+
+  if [ "securefile_list" != "" ] ; then
+    mkdir -p system/etc
+    local secure_out_file=%(android-product-out-dir)s/system/etc/security_profile.dat
+
+    if [ "%(target-variant)s" == "eng" ] ; then
+      local test_out_file=%(android-product-out-dir)s/system/etc/icd_test
+      echo "For test" > $test_out_file
+    fi
+    # SUPPORT MULTIPLEX FLAGS
+    if [ "$SUPPORT_MULTIPLEX_FLAGS" == "true" ] ; then
+      info "package_make_secure_dat : SUPPORT MULTIPLEX FLAGS"
+      # pre-process signing
+      date --rfc-2822 > $secure_out_file
+
+     # collect secure_profile.dat
+      local IFS_package_secure_boot_sign=$IFS
+      IFS=$' '
+      local module_count=0
+
+      # TZ_DRM
+      echo ":TZ_DRM" >> $secure_out_file
+      echo "Number of modules" >> $secure_out_file
+      echo "__MODULE_COUNT__" >> $secure_out_file
+      for file_path in $tz_drm_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+      sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+
+      module_count=0
+      # FIDD
+      echo ":FIDD" >> $secure_out_file
+      echo "Number of modules" >> $secure_out_file
+      echo "__MODULE_COUNT__" >> $secure_out_file
+      for file_path in $fidd_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+      sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+
+      module_count=0
+      # CC
+      echo ":CC" >> $secure_out_file
+      echo "Number of modules" >> $secure_out_file
+      echo "__MODULE_COUNT__" >> $secure_out_file
+      for file_path in $cc_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+      sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+
+      module_count=0
+      # SYSSCOPE
+      echo ":SYSSCOPE" >> $secure_out_file
+      echo "Number of modules" >> $secure_out_file
+      echo "__MODULE_COUNT__" >> $secure_out_file
+      for file_path in $sysscope_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+      sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+
+
+      IFS=${IFS_package_secure_boot_sign}
+
+   # NOT SUPPORT MULTIPLEX FLAGS
+   else
+      info "package_make_secure_dat : NOT SUPPORT MULTIPLEX FLAGS"
+      # pre-process signing
+      date --rfc-2822 > $secure_out_file
+      echo "Number of modules" >> $secure_out_file # > stand for print sting on screen to "secure_out_file" regardless of any data
+      echo "__MODULE_COUNT__" >> $secure_out_file
+
+      # collect secure_profile.dat
+      local IFS_package_secure_boot_sign=$IFS
+      IFS=$' '
+      local module_count=0
+      for file_list_info in $apk_list ; do
+        local keyword=${file_list_info%%@*}
+        local apk_path=${file_list_info##*@}
+        if [ -f ${apk_path} ] ; then
+          echo ${apk_path} | tee -a $secure_out_file
+          echo ${keyword} | tee -a $secure_out_file
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find ${apk_path}"
+        fi
+      done
+
+      for file_path in $tz_drm_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+
+      for file_path in $fidd_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+
+      for file_path in $cc_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+
+      for file_path in $sysscope_list ; do
+        if [ -f $file_path ] ; then
+          echo $file_path >> $secure_out_file
+          openssl dgst -sha256 $file_path | tail --byte=65 >> ${secure_out_file}
+          module_count=$((module_count+1))
+        else
+          warn "package_secure_boot_sign: can not find $file_path"
+        fi
+      done
+
+      IFS=${IFS_package_secure_boot_sign}
+
+      sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+   fi
+
+    # sign the secure_profile.dat
+    if [ "$SEC_BUILD_OPTION_NEW_SIGNSERVER" == "true" ] ; then
+      if [[ "%(target-variant)s" == "eng" && "$SUPPORT_MULTIPLEX_FLAGS" == "true" ]] ; then
+        echo "[ICD] Eng version"
+        openssl sha1 -binary -out unsigned.sig ${secure_out_file}
+        openssl rsautl -sign -pkcs -inkey %(top-dir)s/buildscript/tools/icd_p4v_priv.key -out signature.bin -in unsigned.sig
+        cat ${secure_out_file} signature.bin > signed_security_profile.dat
+        rm unsigned.sig -f
+        rm signature.bin -f
+      else
+        echo "[ICD] Singleflag mode or User/Userdebug version"
+        sign_new_server %(top-dir)s/buildscript/tools/signclient.jar ss_openssl_all SECURITY_ICD ${secure_out_file} signed_security_profile.dat
+      fi
+    else
+      perl %(top-dir)s/buildscript/tools/SecureBootSign.pl secsecureboot SECURITY_ICD ${secure_out_file}
+    fi
+    # copy the secure_profile.dat to release dir
+    cp -f signed_security_profile.dat ${secure_out_file}
+    info "package_secure_boot_sign: signing process done!"
+  fi
+
+  #update fota zip to include secure_profile.dat
+  if [ -f $fota_zip_file ] ; then
+    echo "[ICD] rm -rf SYSTEM/etc/secure_profile.dat"
+    rm -rf SYSTEM/etc/security_profile.dat
+
+    echo "[ICD] mkdir -p SYSTEM/etc"
+    mkdir -p SYSTEM/etc
+
+    echo "[ICD] cp -rf ${secure_out_file} SYSTEM/etc/secure_profile.dat"
+    cp -rf ${secure_out_file} SYSTEM/etc/secure_profile.dat
+
+    echo "[ICD] 7z u -mx=0 $fota_zip_file SYSTEM/etc/secure_profile.dat"
+    7z u -mx=0 $fota_zip_file "SYSTEM/etc/secure_profile.dat"
+  else
+    echo "[ICD] warning, no file $fota_zip_file"
+  fi
+
+  popd > /dev/null
+"""
+
+sign_ss_openssl_cp = """
+  if [ -f %(android-product-out-dir)s/root/sbin/cbd ]; then
+    echo "cbd is exist. Signing cbd"
+    if [ "$SEC_BUILD_OPTION_NEW_SIGNSERVER" == "true" ] ; then
+      echo "Use new signserver"
+      sign_new_server %(top-dir)s/buildscript/tools/signclient.jar ss_openssl_cp GENERAL_IC %(android-product-out-dir)s/root/sbin/cbd %(android-product-out-dir)s/root/sbin/cbd.signed
+    else
+      echo "Use old signserver"
+      perl %(top-dir)s/buildscript/tools/SecureBootSign.pl ss_openssl_cp GENERAL_IC %(android-product-out-dir)s/root/sbin/cbd -out %(android-product-out-dir)s/root/sbin/cbd.signed
+    fi
+    mv %(android-product-out-dir)s/root/sbin/cbd.signed %(android-product-out-dir)s/root/sbin/cbd
+  else
+    echo "cbd is not exist."
+  fi
+
+  if [ -f %(android-product-out-dir)s/system/lib/libsgcc.so ]; then
+    echo "libsgcc.so is exist. Signing libsgcc.so"
+    if [ "$SEC_BUILD_OPTION_NEW_SIGNSERVER" == "true" ] ; then
+      echo "Use new signserver"
+      sign_new_server %(top-dir)s/buildscript/tools/signclient.jar ss_openssl_cp GENERAL_IC %(android-product-out-dir)s/system/lib/libsgcc.so %(android-product-out-dir)s/system/lib/libsgcc.signed.so
+    else
+      echo "Use old signserver"
+      perl %(top-dir)s/buildscript/tools/SecureBootSign.pl ss_openssl_cp GENERAL_IC %(android-product-out-dir)s/system/lib/libsgcc.so -out %(android-product-out-dir)s/system/lib/libsgcc.signed.so
+    fi
+    mv %(android-product-out-dir)s/system/lib/libsgcc.signed.so %(android-product-out-dir)s/system/lib/libsgcc.so
+  else
+    echo "libsgcc.so is not exist."
+  fi
+"""
+
+package_make_secure_nfc_dat = """
+  local secure_list=$1
+
+  pushd $(pwd) > /dev/null
+  cd %(android-product-out-dir)s
+
+  local nfc_list=`echo $secure_list|tr ' ' '\n'`
+  echo "nfc_list : " $nfc_list
+  
+  if [ "nfc_list" != "" ] ; then
+    mkdir -p system/etc
+    local secure_out_file=%(android-product-out-dir)s/system/etc/security_nfc_profile.dat
+    # pre-process signing
+    echo "Number of modules" > $secure_out_file # > stand for print sting on screen to "secure_out_file" regardless of any data
+    echo "__MODULE_COUNT__" >> $secure_out_file
+    date --rfc-2822 >> $secure_out_file
+
+    # collect secure_profile.dat
+    local module_count=0
+    local IFS_package_secure_nfc_sign=$IFS
+    
+    IFS=$' '
+    for target_file in ${nfc_list} ; do
+      local keyword=${target_file%%@*}
+      local file_path=${target_file##*@}
+
+      if [ -f ${file_path} ] ; then
+        echo ${target_file} | tee -a $secure_out_file
+        openssl dgst -sha1 $file_path | tail --byte=41 >> ${secure_out_file}
+        module_count=$((module_count+1))
+      else
+        warn "package_secure_boot_sign: can not find ${file_path}"
+      fi
+    done
+    IFS=${IFS_package_secure_nfc_sign}
+
+    sed -i "s/__MODULE_COUNT__/$module_count/g" $secure_out_file
+
+    #sign the secure_profile.dat
+    if [ "$SEC_BUILD_OPTION_NEW_SIGNSERVER" == "true" ] ; then
+      sign_new_server %(top-dir)s/buildscript/tools/signclient.jar ss_openssl_all SECURITY_ICD ${secure_out_file} signed_security_nfc_profile.dat
+    else
+      perl %(top-dir)s/buildscript/tools/SecureBootSign.pl secsecureboot SECURITY_ICD ${secure_out_file}
+    fi
+    # copy the secure_profile.dat to release dir
+    cp -f signed_security_nfc_profile.dat ${secure_out_file}
+    info "package_make_secure_nfc_dat: signing process done!"
+  fi
+  popd > /dev/null
+"""
+
+[ build-security ]
+use_functions = info warn die sign_new_server sign_ss_openssl_cp package_make_secure_nfc_dat secure_storage_write_variables
+commands = """
+
+  # Sign CBD and Verify Lib
+  if [[ "$TARGET_PRODUCT" == *m0* || "$TARGET_PRODUCT" == *t03g* || "$TARGET_PRODUCT" == *ja3* || "$TARGET_PRODUCT" == *vienna3g* || "$TARGET_PRODUCT" == *lt033g* ]] ; then
+   info "Sign SS OPEN SSL CP in build : $TARGET_PRODUCT"
+    sign_ss_openssl_cp
+  fi
+ 
+  echo "%(security-nfc-data)s"  
+  if [ "%(security-nfc-data)s" != "" ] ; then
+    package_make_secure_nfc_dat "%(security-nfc-data)s"
+  fi
+
+  echo "[SecureStorage] Write variables in dex_preopt.mk, which are used for generation of odex"
+  export SS_CACHE_LOG="%(top-dir)s/buildscript/build_ss.log"
+  secure_storage_write_variables
+"""
+
+[ build-security-icd ]
+use_functions = info warn die sign_new_server package_make_secure_dat _get_dist_target_files
+commands = """
+  target_files=`_get_dist_target_files`
+  echo "[ICD] fota_zip_file : $target_files"
+  echo "%(sign-sec-secureboot)s"
+  if [ "%(sign-sec-secureboot)s" != "" ] ; then
+    package_make_secure_dat "%(sign-sec-secureboot)s" $target_files
+  fi
+
+"""
